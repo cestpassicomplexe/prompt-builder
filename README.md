@@ -1,3 +1,5 @@
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
 # Tutoriel Utilisateur : Prompt Builder
 
 Bienvenue dans le Prompt Builder ! Cet outil vous permet de construire des prompts interactifs et dynamiques, ou des formulaires simples, en combinant différents types de champs. Vous pouvez ensuite copier le prompt finalisé ou exporter un formulaire HTML complet.
