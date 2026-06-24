@@ -387,6 +387,98 @@
             margin-bottom: 15px;
             opacity: 0.5;
         }
+
+        /* Nouvelles classes pour la séparation Variables / Prompt */
+        #variables-manager {
+            padding: 15px 20px;
+            background-color: #fff;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .variables-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .variables-header strong {
+            color: var(--primary-color);
+        }
+        #create-field-dropdown, #insert-variable-dropdown {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+            background: #fff;
+        }
+        #variables-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .variable-chip {
+            background: var(--light-gray);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .variable-chip:hover {
+            background: var(--medium-gray);
+        }
+        .variable-chip.selected {
+            border-color: var(--primary-color);
+            background: #e6f2ff;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .variable-chip i {
+            margin-left: 10px;
+            color: var(--danger-color);
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        .variable-chip i:hover {
+            opacity: 1;
+        }
+        .empty-variables {
+            color: var(--secondary-color);
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        /* Aperçu et Export mis à jour */
+        .preview-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .preview-form-zone, .preview-prompt-zone {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: #fcfcfc;
+        }
+        .preview-prompt-zone {
+            background-color: #fff;
+        }
+        .preview-prompt-zone h4, .preview-form-zone h4 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        #editor-toolbar strong {
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
     </style>
 </head>
 
@@ -410,8 +502,31 @@
     <div class="app-container">
         <!-- Editor Section -->
         <section id="editor-section">
-            <!-- Toolbar -->
+            
+            <!-- Zone 1 : Gestion des Variables -->
+            <div id="variables-manager">
+                <div class="variables-header">
+                    <strong>1. Vos variables :</strong>
+                    <select id="create-field-dropdown">
+                        <option value="">+ Ajouter une variable...</option>
+                        <option value="text-input">📝 Zone de texte</option>
+                        <option value="number-input">🔢 Champ numérique</option>
+                        <option value="url-input">🔗 Champ d'URL</option>
+                        <option value="textarea">📄 Zone de texte multi-lignes</option>
+                        <option value="dropdown">▼ Liste déroulante</option>
+                        <option value="qcm">⚪ QCM (Choix unique)</option>
+                        <option value="checkbox">☑️ Cases à cocher</option>
+                        <option value="range-input">🎚️ Curseur (Range)</option>
+                    </select>
+                </div>
+                <div id="variables-list">
+                    <div class="empty-variables">Aucune variable définie. Créez-en une pour l'utiliser dans votre prompt.</div>
+                </div>
+            </div>
+
+            <!-- Zone 2 : Toolbar du Prompt -->
             <div id="editor-toolbar">
+                <strong>2. Votre Prompt :</strong>
                 <button data-format="bold" title="Gras (Ctrl+B)"><b>B</b></button>
                 <button data-format="italic" title="Italique (Ctrl+I)"><i>I</i></button>
                 <button data-format="underline" title="Souligné"><u>U</u></button>
@@ -424,29 +539,15 @@
                     <emoji-picker></emoji-picker>
                 </div>
                 <div class="separator"></div>
-                <select id="insert-field-dropdown">
-                    <option value="">Insérer un champ...</option>
-                    <option value="text-input">📝 Zone de texte</option>
-                    <option value="number-input">🔢 Champ numérique</option>
-                    <option value="url-input">🔗 Champ d'URL</option>
-                    <option value="textarea">📄 Zone de texte multi-lignes</option>
-                    <option value="dropdown">▼ Liste déroulante</option>
-                    <option value="qcm">⚪ QCM (Choix unique)</option>
-                    <option value="checkbox">☑️ Cases à cocher</option>
-                    <option value="range-input">🎚️ Curseur (Range)</option>
+                <!-- Nouveau bouton pour insérer des variables existantes -->
+                <select id="insert-variable-dropdown">
+                    <option value="">Insérer une variable...</option>
                 </select>
             </div>
 
             <!-- Editor -->
             <div id="editor-container">
-                <textarea id="prompt-editor" placeholder="Écrivez votre prompt ici...
-
-Vous pouvez utiliser le Markdown pour formater votre texte :
-- **gras**, *italique*
-- Listes à puces
-- Liens, etc.
-
-Utilisez le menu 'Insérer un champ' pour ajouter des champs interactifs."></textarea>
+                <textarea id="prompt-editor" placeholder="Écrivez votre prompt ici et insérez vos variables au bon endroit..."></textarea>
             </div>
         </section>
 

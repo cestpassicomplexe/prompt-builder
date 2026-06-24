@@ -2,7 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const promptEditor = document.getElementById('prompt-editor');
     const editorToolbar = document.getElementById('editor-toolbar');
-    const insertFieldDropdown = document.getElementById('insert-field-dropdown');
+    const createFieldDropdown = document.getElementById('create-field-dropdown');
+    const insertVariableDropdown = document.getElementById('insert-variable-dropdown');
+    const variablesListContainer = document.getElementById('variables-list');
     const propertiesContent = document.getElementById('properties-content');
     const previewSection = document.getElementById('preview-section');
     const previewHeader = document.getElementById('preview-header');
@@ -24,85 +26,71 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 
     function initializeApp() {
-        // Set default prompt content
-        promptEditor.value = `Ceci est le **prompt principal**. Il est mis à jour en direct.
+        promptEditor.value = `Agis comme un expert en marketing digital.
 
-**Uniquement** ce texte sera copié côté utilisateur. Il doit donc contenir l'entièreté de votre prompt et des champs personnalisables.
+Tâche : Rédige une annonce pour le produit {{textinput1}}.
 
-Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un champ" ci-dessus.
+Ton exigé : {{dropdown2}}.`;
 
-**Exemple de prompt :**
+        fields = {
+            'textinput1': { type: 'text-input', label: 'Nom du produit', placeholder: 'Ex: Super Logiciel', required: true },
+            'dropdown2': { type: 'dropdown', label: 'Ton du message', options: ['Professionnel', 'Humoristique', 'Énergique'], required: false }
+        };
+        fieldCounter = 2;
 
-**Rôle** : Vous êtes un expert en marketing digital.
-
-**Tâche** : Créer une campagne publicitaire pour un produit.
-
-**Contraintes** : Le ton doit être professionnel et engageant.`;
-
+        renderVariablesList();
         updatePreview();
         setupEventListeners();
     }
 
     function setupEventListeners() {
-        // Editor input
-        promptEditor.addEventListener('input', () => {
-            updatePreview();
-        });
-
-        // Editor click - detect field references
-        promptEditor.addEventListener('click', () => {
-            detectAndSelectFieldAtCursor();
-        });
-
-        // Editor keyboard navigation
+        promptEditor.addEventListener('input', () => updatePreview());
+        promptEditor.addEventListener('click', () => detectAndSelectFieldAtCursor());
         promptEditor.addEventListener('keyup', (e) => {
             if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
                 detectAndSelectFieldAtCursor();
             }
         });
 
-        // Toolbar buttons
         editorToolbar.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-
             const format = button.dataset.format;
             if (!format) return;
 
             if (format === 'emoji') {
-                emojiPickerContainer.style.display =
-                    emojiPickerContainer.style.display === 'block' ? 'none' : 'block';
+                emojiPickerContainer.style.display = emojiPickerContainer.style.display === 'block' ? 'none' : 'block';
                 return;
             }
-
             applyFormat(format);
         });
 
-        // Emoji picker
         emojiPicker.addEventListener('emoji-click', (e) => {
             insertAtCursor(e.detail.unicode);
             emojiPickerContainer.style.display = 'none';
         });
 
-        // Insert field dropdown
-        insertFieldDropdown.addEventListener('change', (e) => {
+        // NOUVEAU : Création d'une variable
+        createFieldDropdown.addEventListener('change', (e) => {
             if (e.target.value) {
                 insertField(e.target.value);
                 e.target.value = '';
             }
         });
 
-        // Preview toggle
-        previewHeader.addEventListener('click', () => {
-            previewSection.classList.toggle('collapsed');
+        // NOUVEAU : Insertion d'une variable dans le texte
+        insertVariableDropdown.addEventListener('change', (e) => {
+            if (e.target.value) {
+                insertAtCursor(e.target.value);
+                e.target.value = '';
+                promptEditor.focus();
+            }
         });
 
-        // Save/Load
+        previewHeader.addEventListener('click', () => previewSection.classList.toggle('collapsed'));
         saveConfigBtn.addEventListener('click', saveConfiguration);
         loadConfigBtn.addEventListener('click', () => loadConfigInput.click());
         loadConfigInput.addEventListener('change', loadConfiguration);
-
-        // Copy/Export
         copyTextBtn.addEventListener('click', copyPromptText);
         generateHtmlBtn.addEventListener('click', generateHtml);
     }
@@ -204,32 +192,19 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
         };
 
         switch (type) {
-            case 'qcm':
-            case 'checkbox':
-            case 'dropdown':
-                field.options = ['Option 1', 'Option 2'];
-                break;
-            case 'textarea':
-                field.rows = 4;
-                break;
-            case 'number-input':
-                field.min = '';
-                field.max = '';
-                field.step = '1';
-                break;
-            case 'range-input':
-                field.min = '0';
-                field.max = '100';
-                field.step = '1';
-                field.value = '50';
-                break;
+            case 'qcm': case 'checkbox': case 'dropdown':
+                field.options = ['Option 1', 'Option 2']; break;
+            case 'textarea': field.rows = 4; break;
+            case 'number-input': field.min = ''; field.max = ''; field.step = '1'; break;
+            case 'range-input': field.min = '0'; field.max = '100'; field.step = '1'; field.value = '50'; break;
         }
 
         fields[fieldId] = field;
-
-        const fieldRef = `{{${fieldId}}}`;
-        insertAtCursor(fieldRef);
+        
+        // On ne l'insère plus automatiquement dans le texte. On met juste à jour l'interface.
+        renderVariablesList();
         selectField(fieldId);
+        updatePreview();
     }
 
     function getDefaultLabel(type) {
@@ -249,6 +224,47 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
     function selectField(fieldId) {
         selectedFieldId = fieldId;
         renderPropertiesPanel();
+        renderVariablesList(); // Met à jour la surbrillance
+    }
+
+    function renderVariablesList() {
+        if (Object.keys(fields).length === 0) {
+            variablesListContainer.innerHTML = '<div class="empty-variables">Aucune variable définie. Créez-en une pour l\'utiliser.</div>';
+            insertVariableDropdown.innerHTML = '<option value="">Insérer une variable...</option>';
+            return;
+        }
+
+        variablesListContainer.innerHTML = '';
+        insertVariableDropdown.innerHTML = '<option value="">Insérer une variable...</option>';
+
+        Object.keys(fields).forEach(fieldId => {
+            const field = fields[fieldId];
+            
+            // Étiquette visuelle (Chip)
+            const chip = document.createElement('div');
+            chip.className = `variable-chip ${selectedFieldId === fieldId ? 'selected' : ''}`;
+            chip.innerHTML = `${field.label || fieldId} <i class="fas fa-times" title="Supprimer"></i>`;
+            
+            chip.addEventListener('click', (e) => {
+                if(e.target.tagName !== 'I') selectField(fieldId);
+            });
+
+            const deleteIcon = chip.querySelector('i');
+            deleteIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`Supprimer la variable "${field.label}" ?\n\nCela retirera également ses balises {{${fieldId}}} du texte.`)) {
+                    deleteField(fieldId);
+                }
+            });
+
+            variablesListContainer.appendChild(chip);
+
+            // Option pour le menu déroulant du Prompt
+            const option = document.createElement('option');
+            option.value = `{{${fieldId}}}`;
+            option.textContent = field.label || fieldId;
+            insertVariableDropdown.appendChild(option);
+        });
     }
 
     function renderPropertiesPanel() {
@@ -366,6 +382,7 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
         if (labelInput) {
             labelInput.addEventListener('input', (e) => {
                 field.label = e.target.value;
+                renderVariablesList(); // Ajout essentiel !
                 updatePreview();
             });
         }
@@ -427,84 +444,71 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
         const pattern = new RegExp(`\\{\\{${fieldId}\\}\\}`, 'g');
         promptEditor.value = promptEditor.value.replace(pattern, '');
         selectedFieldId = null;
+        renderVariablesList();
         renderPropertiesPanel();
         updatePreview();
     }
 
-    // MODIFIÉ : Utilisation d'un Set interne pour éviter la duplication des inputs de même ID et gestion dynamique du rappel des variables
     function updatePreview() {
         const savedValues = {};
         if (previewContent) {
             previewContent.querySelectorAll('input, select, textarea').forEach(el => {
                 const name = el.name;
                 if (!name) return;
-                if (el.type === 'radio') {
-                    if (el.checked) savedValues[name] = el.value;
-                } else if (el.type === 'checkbox') {
+                if (el.type === 'radio') { if (el.checked) savedValues[name] = el.value; } 
+                else if (el.type === 'checkbox') {
                     if (el.checked) {
                         if (!savedValues[name]) savedValues[name] = [];
                         savedValues[name].push(el.value);
                     }
-                } else {
-                    savedValues[name] = el.value;
-                }
+                } else { savedValues[name] = el.value; }
             });
         }
 
+        // 1. Zone Formulaire séparée
+        let formHtml = '';
+        if (Object.keys(fields).length > 0) {
+            formHtml += '<div class="preview-form-zone"><h4>1. Testez vos variables</h4>';
+            Object.keys(fields).forEach(fieldId => {
+                formHtml += generateFieldHtml(fieldId, fields[fieldId]);
+            });
+            formHtml += '</div>';
+        }
+
+        // 2. Zone Prompt séparée
         let content = promptEditor.value;
         const fieldPattern = /\{\{([a-zA-Z0-9_-]+)\}\}/g;
-        const renderedFields = new Set();
-
+        
         content = content.replace(fieldPattern, (match, fieldId) => {
-            if (!fields[fieldId]) {
-                return `<span style="color: red; font-weight: bold;">[Champ inconnu: ${fieldId}]</span>`;
-            }
-            
-            // Si c'est la première fois qu'on croise cette variable, on affiche le formulaire complet
-            if (!renderedFields.has(fieldId)) {
-                renderedFields.add(fieldId);
-                return generateFieldHtml(fieldId, fields[fieldId]);
+            if (!fields[fieldId]) return `<span style="color: red; font-weight: bold;">[Inconnu: ${fieldId}]</span>`;
+            return `<span class="field-recall" data-field-id="${fieldId}">[${fields[fieldId].label || fieldId}]</span>`;
+        });
+
+        const renderedPrompt = DOMPurify.sanitize(marked.parse(content), { ADD_ATTR: ['data-field-id'] });
+        
+        let promptHtml = '<div class="preview-prompt-zone"><h4>2. Aperçu du Prompt généré</h4>';
+        promptHtml += renderedPrompt || '<span style="color:#999; font-style:italic;">Votre prompt apparaîtra ici...</span>';
+        promptHtml += '</div>';
+
+        previewContent.innerHTML = `<div class="preview-layout">${formHtml}${promptHtml}</div>`;
+        
+        // Restauration des valeurs
+        previewContent.querySelectorAll('input, select, textarea').forEach(el => {
+            const name = el.name;
+            if (!name || savedValues[name] === undefined) return;
+            if (el.type === 'radio') { if (el.value === savedValues[name]) el.checked = true; } 
+            else if (el.type === 'checkbox') {
+                if (Array.isArray(savedValues[name]) && savedValues[name].includes(el.value)) el.checked = true;
             } else {
-                // Sinon, on affiche un indicateur visuel (badge) sans dupliquer l'input HTML
-                return `<span class="field-recall" data-field-id="${fieldId}">[Rappel : ${fields[fieldId].label || fieldId}]</span>`;
+                el.value = savedValues[name];
+                if (el.type === 'range') {
+                    const output = el.nextElementSibling;
+                    if (output && output.tagName === 'OUTPUT') output.value = el.value;
+                }
             }
         });
 
-        const html = DOMPurify.sanitize(marked.parse(content), { ADD_ATTR: ['data-field-id'] });
-
-        if (html.trim()) {
-            previewContent.innerHTML = html;
-            
-            // Restauration des valeurs précédemment saisies
-            previewContent.querySelectorAll('input, select, textarea').forEach(el => {
-                const name = el.name;
-                if (!name || savedValues[name] === undefined) return;
-                
-                if (el.type === 'radio') {
-                    if (el.value === savedValues[name]) el.checked = true;
-                } else if (el.type === 'checkbox') {
-                    if (Array.isArray(savedValues[name]) && savedValues[name].includes(el.value)) {
-                        el.checked = true;
-                    }
-                } else {
-                    el.value = savedValues[name];
-                    if (el.type === 'range') {
-                        const output = el.nextElementSibling;
-                        if (output && output.tagName === 'OUTPUT') {
-                            output.value = el.value;
-                        }
-                    }
-                }
-            });
-
-            attachPreviewListeners();
-        } else {
-            previewContent.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-eye"></i>
-                    <p>L'aperçu de votre prompt apparaîtra ici</p>
-                </div>`;
-        }
+        attachPreviewListeners();
     }
 
     function generateFieldHtml(fieldId, field) {
@@ -573,17 +577,13 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
     }
 
     function attachPreviewListeners() {
-        // Range inputs
         previewContent.querySelectorAll('input[type="range"]').forEach(range => {
             range.addEventListener('input', (e) => {
                 const output = e.target.nextElementSibling;
-                if (output && output.tagName === 'OUTPUT') {
-                    output.value = e.target.value;
-                }
+                if (output && output.tagName === 'OUTPUT') output.value = e.target.value;
             });
         });
 
-        // Fonction pour mettre à jour les rappels d'une variable spécifique
         const updateRecallsForField = (fieldId) => {
             const field = fields[fieldId];
             if (!field) return;
@@ -594,9 +594,7 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             let value = '';
             if (field.type === 'checkbox') {
                 const checkedOpts = [];
-                previewContent.querySelectorAll(`input[name="${fieldId}"]:checked`).forEach(cb => {
-                    checkedOpts.push(cb.value);
-                });
+                previewContent.querySelectorAll(`input[name="${fieldId}"]:checked`).forEach(cb => checkedOpts.push(cb.value));
                 value = checkedOpts.join(', ');
             } else if (field.type === 'qcm') {
                 const checkedRadio = previewContent.querySelector(`input[name="${fieldId}"]:checked`);
@@ -611,49 +609,40 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                     recall.textContent = value;
                     recall.classList.add('filled');
                 } else {
-                    recall.textContent = `[Rappel : ${field.label || fieldId}]`;
+                    recall.textContent = `[${field.label || fieldId}]`;
                     recall.classList.remove('filled');
                 }
             });
         };
 
-        // Ecouter les modifications de tous les champs de saisie de l'aperçu
         previewContent.querySelectorAll('input, select, textarea').forEach(el => {
             const name = el.name;
             if (!name) return;
-
             el.addEventListener('input', () => updateRecallsForField(name));
             el.addEventListener('change', () => updateRecallsForField(name));
         });
 
-        // Initialiser l'affichage de tous les rappels au chargement de l'aperçu
-        Object.keys(fields).forEach(fieldId => {
-            updateRecallsForField(fieldId);
-        });
+        Object.keys(fields).forEach(fieldId => updateRecallsForField(fieldId));
     }
 
     function copyPromptText() {
         let content = promptEditor.value;
-
         const formData = {};
+        
         previewContent.querySelectorAll('input, select, textarea').forEach(el => {
             const name = el.name;
             if (!name) return;
-
-            if (el.type === 'radio') {
-                if (el.checked) formData[name] = el.value;
-            } else if (el.type === 'checkbox') {
-                if (el.checked) {
-                    formData[name] = formData[name] ? `${formData[name]}, ${el.value}` : el.value;
-                }
-            } else {
-                formData[name] = el.value;
-            }
+            if (el.type === 'radio') { if (el.checked) formData[name] = el.value; } 
+            else if (el.type === 'checkbox') {
+                if (el.checked) formData[name] = formData[name] ? `${formData[name]}, ${el.value}` : el.value;
+            } else { formData[name] = el.value; }
         });
 
         const fieldPattern = /\{\{([a-zA-Z0-9_-]+)\}\}/g;
         content = content.replace(fieldPattern, (match, fieldId) => {
-            return formData[fieldId] !== undefined ? formData[fieldId] : match;
+            const val = formData[fieldId];
+            if (val && val.trim() !== '') return val;
+            return fields[fieldId] ? `[${fields[fieldId].label}]` : match;
         });
 
         const tempDiv = document.createElement('div');
@@ -668,11 +657,21 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
     function generateHtml() {
         updatePreview();
 
-        const formHtml = previewContent.innerHTML;
-        const scriptForExport = getScriptForExportedPage();
-        const buttonHtml = `<button class="js-copy-prompt-btn copy-prompt-btn-exported">Je veux mon prompt</button>`;
+        let formHtml = '';
+        if (Object.keys(fields).length > 0) {
+            formHtml += '<div class="preview-form-zone"><h4>1. Variables du Prompt</h4>';
+            Object.keys(fields).forEach(fieldId => {
+                formHtml += generateFieldHtml(fieldId, fields[fieldId]);
+            });
+            formHtml += '</div>';
+        }
 
-        const fullPageHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Formulaire Interactif</title><script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"><\/script><style>
+        const buttonHtml = `<button class="js-copy-prompt-btn copy-prompt-btn-exported">Je veux mon prompt</button>`;
+        const promptHtmlTemplate = `<div class="preview-prompt-zone"><h4>2. Résultat final</h4><div id="final-prompt-content" class="prompt-result-box">Le prompt apparaîtra ici...</div>${buttonHtml}</div>`;
+
+        const scriptForExport = getScriptForExportedPage();
+
+        const fullPageHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Générateur de Prompt</title><script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"><\/script><style>
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; padding: 2em; background-color: #f4f4f4; } 
 .container { max-width: 800px; margin: auto; background: white; padding: 2em; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; } 
 fieldset { border: 1px solid #ddd; padding: 1em; border-radius: 5px; margin-bottom: 15px; } 
@@ -704,126 +703,87 @@ input[type="range"] + output { margin-left: 10px; font-weight: 500; }
 .container > .js-copy-prompt-btn.copy-prompt-btn-exported:last-of-type {
     margin-top: 2em;
 }
-<\/style></head><body><div class="container">${buttonHtml}${formHtml}${buttonHtml}</div>${scriptForExport}</body></html>`;
+<\/style></head><body><div class="container">${formHtml}${promptHtmlTemplate}</div>${scriptForExport}</body></html>`;
 
-        navigator.clipboard.writeText(fullPageHtml)
-            .then(() => {
-                alert('Le code HTML du formulaire complet a été copié ! Un aperçu va s\'ouvrir.');
-                const blob = new Blob([fullPageHtml], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-            })
-            .catch(err => alert('Erreur lors de la copie du HTML : ' + err));
+        navigator.clipboard.writeText(fullPageHtml).then(() => {
+            alert('Le code HTML complet a été copié ! Un aperçu va s\'ouvrir.');
+            const blob = new Blob([fullPageHtml], { type: 'text/html' });
+            window.open(URL.createObjectURL(blob), '_blank');
+        });
     }
 
     function getScriptForExportedPage() {
-        const promptContent = promptEditor.value;
-        const fieldsData = fields;
-
         return `<script>
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.container');
-    const copyBtns = document.querySelectorAll('.js-copy-prompt-btn');
-    const promptContent = ${JSON.stringify(promptContent)};
-    const fieldsData = ${JSON.stringify(fieldsData)};
+    const promptResultBox = document.getElementById('final-prompt-content');
+    const promptContent = ${JSON.stringify(promptEditor.value)};
+    const fieldsData = ${JSON.stringify(fields)};
 
     const getFormData = () => {
         const formData = {};
         container.querySelectorAll('input, select, textarea').forEach(el => {
             const name = el.name;
             if (!name) return;
-
-            if (el.type === 'radio') {
-                if (el.checked) formData[name] = el.value;
-            } else if (el.type === 'checkbox') {
-                if (el.checked) {
-                    formData[name] = formData[name] ? formData[name] + ', ' + el.value : el.value;
-                }
-            } else {
-                formData[name] = el.value;
-            }
+            if (el.type === 'radio') { if (el.checked) formData[name] = el.value; } 
+            else if (el.type === 'checkbox') {
+                if (el.checked) formData[name] = formData[name] ? formData[name] + ', ' + el.value : el.value;
+            } else { formData[name] = el.value; }
         });
         return formData;
+    };
+
+    const updatePromptPreview = () => {
+        const formData = getFormData();
+        let content = promptContent;
+        const fieldPattern = /\\{\\{([a-zA-Z0-9_-]+)\\}\\}/g;
+        
+        content = content.replace(fieldPattern, (match, fieldId) => {
+            const val = formData[fieldId];
+            if (val && val.trim() !== '') return '<span class="field-recall filled">' + val + '</span>';
+            return '<span class="field-recall">[' + (fieldsData[fieldId] ? fieldsData[fieldId].label : fieldId) + ']</span>';
+        });
+
+        if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+            promptResultBox.innerHTML = DOMPurify.sanitize(marked.parse(content));
+        } else {
+            promptResultBox.innerHTML = content.replace(/\\n/g, '<br>');
+        }
     };
 
     container.querySelectorAll('input[type="range"]').forEach(range => {
         range.addEventListener('input', (e) => {
             const output = e.target.nextElementSibling;
-            if (output && output.tagName === 'OUTPUT') {
-                output.value = e.target.value;
-            }
+            if (output && output.tagName === 'OUTPUT') output.value = e.target.value;
         });
     });
-
-    const updateRecallsForField = (fieldId) => {
-        const field = fieldsData[fieldId];
-        if (!field) return;
-
-        const elements = container.querySelectorAll('[name="' + fieldId + '"]');
-        if (elements.length === 0) return;
-
-        let value = '';
-        if (field.type === 'checkbox') {
-            const checkedOpts = [];
-            container.querySelectorAll('input[name="' + fieldId + '"]:checked').forEach(cb => {
-                checkedOpts.push(cb.value);
-            });
-            value = checkedOpts.join(', ');
-        } else if (field.type === 'qcm') {
-            const checkedRadio = container.querySelector('input[name="' + fieldId + '"]:checked');
-            value = checkedRadio ? checkedRadio.value : '';
-        } else {
-            value = elements[0].value;
-        }
-
-        const recalls = container.querySelectorAll('.field-recall[data-field-id="' + fieldId + '"]');
-        recalls.forEach(recall => {
-            if (value && value.trim() !== '') {
-                recall.textContent = value;
-                recall.classList.add('filled');
-            } else {
-                recall.textContent = '[Rappel : ' + (field.label || fieldId) + ']';
-                recall.classList.remove('filled');
-            }
-        });
-    };
 
     container.querySelectorAll('input, select, textarea').forEach(el => {
-        const name = el.name;
-        if (!name) return;
-
-        el.addEventListener('input', () => updateRecallsForField(name));
-        el.addEventListener('change', () => updateRecallsForField(name));
+        el.addEventListener('input', updatePromptPreview);
+        el.addEventListener('change', updatePromptPreview);
     });
 
-    Object.keys(fieldsData).forEach(fieldId => {
-        updateRecallsForField(fieldId);
-    });
+    updatePromptPreview(); // Rendu initial
 
-    copyBtns.forEach(btn => {
+    document.querySelectorAll('.js-copy-prompt-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const formData = getFormData();
             let content = promptContent;
-
             const fieldPattern = /\\{\\{([a-zA-Z0-9_-]+)\\}\\}/g;
+            
             content = content.replace(fieldPattern, (match, fieldId) => {
-                return formData[fieldId] !== undefined ? formData[fieldId] : match;
+                const val = formData[fieldId];
+                if (val && val.trim() !== '') return val;
+                return '[' + (fieldsData[fieldId] ? fieldsData[fieldId].label : fieldId) + ']';
             });
 
             const tempDiv = document.createElement('div');
-            if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-                tempDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
-            } else {
-                tempDiv.textContent = content;
-            }
-            const plainText = tempDiv.innerText || tempDiv.textContent || '';
+            if (typeof marked !== 'undefined') tempDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
+            else tempDiv.textContent = content;
 
-            navigator.clipboard.writeText(plainText.trim())
-                .then(() => alert('Le contenu du prompt a été copié !'))
-                .catch(err => {
-                    console.error("Erreur de copie du prompt:", err);
-                    alert("Erreur de copie: " + err);
-                });
+            navigator.clipboard.writeText(tempDiv.innerText || tempDiv.textContent || '')
+                .then(() => alert('Le prompt final a été copié !'))
+                .catch(err => alert("Erreur de copie: " + err));
         });
     });
 });
@@ -870,6 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 selectedFieldId = null;
+                renderVariablesList();
                 renderPropertiesPanel();
                 updatePreview();
 
@@ -918,6 +879,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             fields[fieldId] = field;
         });
+
+        renderVariablesList();
 
         console.log('Migrated old format to new format');
     }
