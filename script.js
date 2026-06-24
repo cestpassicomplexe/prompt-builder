@@ -56,7 +56,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
 
         // Editor keyboard navigation
         promptEditor.addEventListener('keyup', (e) => {
-            // Detect field on arrow keys or other navigation
             if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
                 detectAndSelectFieldAtCursor();
             }
@@ -112,7 +111,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
         const cursorPos = promptEditor.selectionStart;
         const text = promptEditor.value;
 
-        // Find all {{fieldId}} patterns
         const fieldPattern = /\{\{([a-zA-Z0-9_-]+)\}\}/g;
         let match;
 
@@ -120,13 +118,10 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             const matchStart = match.index;
             const matchEnd = match.index + match[0].length;
 
-            // Check if cursor is within this match
             if (cursorPos >= matchStart && cursorPos <= matchEnd) {
                 const fieldId = match[1];
 
-                // Check if this field exists
                 if (fields[fieldId]) {
-                    // Select this field
                     selectField(fieldId);
                     return;
                 }
@@ -201,7 +196,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
         fieldCounter++;
         const fieldId = `${type.replace(/-/g, '')}${fieldCounter}`;
 
-        // Create field data
         const field = {
             type: type,
             label: getDefaultLabel(type),
@@ -209,7 +203,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             required: false
         };
 
-        // Add type-specific properties
         switch (type) {
             case 'qcm':
             case 'checkbox':
@@ -234,11 +227,8 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
 
         fields[fieldId] = field;
 
-        // Insert field reference in editor
         const fieldRef = `{{${fieldId}}}`;
         insertAtCursor(fieldRef);
-
-        // Select the field
         selectField(fieldId);
     }
 
@@ -299,7 +289,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 <input type="text" id="prop-label" value="${field.label || ''}">
             </div>`;
 
-        // Placeholder for applicable types
         if (['text-input', 'textarea', 'number-input', 'url-input', 'dropdown'].includes(field.type)) {
             html += `
                 <div class="property-group">
@@ -308,7 +297,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 </div>`;
         }
 
-        // Options for dropdown/qcm/checkbox
         if (['qcm', 'checkbox', 'dropdown'].includes(field.type)) {
             html += `
                 <div class="property-group">
@@ -317,7 +305,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 </div>`;
         }
 
-        // Rows for textarea
         if (field.type === 'textarea') {
             html += `
                 <div class="property-group">
@@ -326,7 +313,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 </div>`;
         }
 
-        // Min/Max/Step for number and range
         if (field.type === 'number-input' || field.type === 'range-input') {
             html += `
                 <div class="property-group">
@@ -343,7 +329,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 </div>`;
         }
 
-        // Default value for range
         if (field.type === 'range-input') {
             html += `
                 <div class="property-group">
@@ -352,7 +337,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 </div>`;
         }
 
-        // Required checkbox
         if (['text-input', 'textarea', 'number-input', 'url-input', 'dropdown', 'qcm', 'checkbox'].includes(field.type)) {
             html += `
                 <div class="property-group">
@@ -363,7 +347,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 </div>`;
         }
 
-        // Delete button
         html += `
             <div class="property-group">
                 <button class="delete-field">
@@ -372,8 +355,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             </div>`;
 
         propertiesContent.innerHTML = html;
-
-        // Add event listeners
         addPropertyListeners();
     }
 
@@ -381,7 +362,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
         const field = fields[selectedFieldId];
         if (!field) return;
 
-        // Label
         const labelInput = document.getElementById('prop-label');
         if (labelInput) {
             labelInput.addEventListener('input', (e) => {
@@ -390,7 +370,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             });
         }
 
-        // Placeholder
         const placeholderInput = document.getElementById('prop-placeholder');
         if (placeholderInput) {
             placeholderInput.addEventListener('input', (e) => {
@@ -399,7 +378,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             });
         }
 
-        // Options
         const optionsTextarea = document.getElementById('prop-options');
         if (optionsTextarea) {
             optionsTextarea.addEventListener('input', (e) => {
@@ -408,7 +386,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             });
         }
 
-        // Rows
         const rowsInput = document.getElementById('prop-rows');
         if (rowsInput) {
             rowsInput.addEventListener('input', (e) => {
@@ -417,7 +394,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             });
         }
 
-        // Min/Max/Step/Value
         ['min', 'max', 'step', 'value'].forEach(prop => {
             const input = document.getElementById(`prop-${prop}`);
             if (input) {
@@ -428,7 +404,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             }
         });
 
-        // Required
         const requiredCheckbox = document.getElementById('prop-required');
         if (requiredCheckbox) {
             requiredCheckbox.addEventListener('change', (e) => {
@@ -437,7 +412,6 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             });
         }
 
-        // Delete button
         const deleteBtn = propertiesContent.querySelector('.delete-field');
         if (deleteBtn) {
             deleteBtn.addEventListener('click', () => {
@@ -449,37 +423,80 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
     }
 
     function deleteField(fieldId) {
-        // Remove from fields object
         delete fields[fieldId];
-
-        // Remove all references from editor
         const pattern = new RegExp(`\\{\\{${fieldId}\\}\\}`, 'g');
         promptEditor.value = promptEditor.value.replace(pattern, '');
-
-        // Clear selection
         selectedFieldId = null;
         renderPropertiesPanel();
         updatePreview();
     }
 
+    // MODIFIÉ : Utilisation d'un Set interne pour éviter la duplication des inputs de même ID et gestion dynamique du rappel des variables
     function updatePreview() {
-        let content = promptEditor.value;
+        const savedValues = {};
+        if (previewContent) {
+            previewContent.querySelectorAll('input, select, textarea').forEach(el => {
+                const name = el.name;
+                if (!name) return;
+                if (el.type === 'radio') {
+                    if (el.checked) savedValues[name] = el.value;
+                } else if (el.type === 'checkbox') {
+                    if (el.checked) {
+                        if (!savedValues[name]) savedValues[name] = [];
+                        savedValues[name].push(el.value);
+                    }
+                } else {
+                    savedValues[name] = el.value;
+                }
+            });
+        }
 
-        // Replace field references with actual form fields
+        let content = promptEditor.value;
         const fieldPattern = /\{\{([a-zA-Z0-9_-]+)\}\}/g;
+        const renderedFields = new Set();
 
         content = content.replace(fieldPattern, (match, fieldId) => {
             if (!fields[fieldId]) {
                 return `<span style="color: red; font-weight: bold;">[Champ inconnu: ${fieldId}]</span>`;
             }
-            return generateFieldHtml(fieldId, fields[fieldId]);
+            
+            // Si c'est la première fois qu'on croise cette variable, on affiche le formulaire complet
+            if (!renderedFields.has(fieldId)) {
+                renderedFields.add(fieldId);
+                return generateFieldHtml(fieldId, fields[fieldId]);
+            } else {
+                // Sinon, on affiche un indicateur visuel (badge) sans dupliquer l'input HTML
+                return `<span class="field-recall" data-field-id="${fieldId}">[Rappel : ${fields[fieldId].label || fieldId}]</span>`;
+            }
         });
 
-        // Render markdown
-        const html = DOMPurify.sanitize(marked.parse(content));
+        const html = DOMPurify.sanitize(marked.parse(content), { ADD_ATTR: ['data-field-id'] });
 
         if (html.trim()) {
             previewContent.innerHTML = html;
+            
+            // Restauration des valeurs précédemment saisies
+            previewContent.querySelectorAll('input, select, textarea').forEach(el => {
+                const name = el.name;
+                if (!name || savedValues[name] === undefined) return;
+                
+                if (el.type === 'radio') {
+                    if (el.value === savedValues[name]) el.checked = true;
+                } else if (el.type === 'checkbox') {
+                    if (Array.isArray(savedValues[name]) && savedValues[name].includes(el.value)) {
+                        el.checked = true;
+                    }
+                } else {
+                    el.value = savedValues[name];
+                    if (el.type === 'range') {
+                        const output = el.nextElementSibling;
+                        if (output && output.tagName === 'OUTPUT') {
+                            output.value = el.value;
+                        }
+                    }
+                }
+            });
+
             attachPreviewListeners();
         } else {
             previewContent.innerHTML = `
@@ -565,12 +582,59 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
                 }
             });
         });
+
+        // Fonction pour mettre à jour les rappels d'une variable spécifique
+        const updateRecallsForField = (fieldId) => {
+            const field = fields[fieldId];
+            if (!field) return;
+
+            const elements = previewContent.querySelectorAll(`[name="${fieldId}"]`);
+            if (elements.length === 0) return;
+
+            let value = '';
+            if (field.type === 'checkbox') {
+                const checkedOpts = [];
+                previewContent.querySelectorAll(`input[name="${fieldId}"]:checked`).forEach(cb => {
+                    checkedOpts.push(cb.value);
+                });
+                value = checkedOpts.join(', ');
+            } else if (field.type === 'qcm') {
+                const checkedRadio = previewContent.querySelector(`input[name="${fieldId}"]:checked`);
+                value = checkedRadio ? checkedRadio.value : '';
+            } else {
+                value = elements[0].value;
+            }
+
+            const recalls = previewContent.querySelectorAll(`.field-recall[data-field-id="${fieldId}"]`);
+            recalls.forEach(recall => {
+                if (value && value.trim() !== '') {
+                    recall.textContent = value;
+                    recall.classList.add('filled');
+                } else {
+                    recall.textContent = `[Rappel : ${field.label || fieldId}]`;
+                    recall.classList.remove('filled');
+                }
+            });
+        };
+
+        // Ecouter les modifications de tous les champs de saisie de l'aperçu
+        previewContent.querySelectorAll('input, select, textarea').forEach(el => {
+            const name = el.name;
+            if (!name) return;
+
+            el.addEventListener('input', () => updateRecallsForField(name));
+            el.addEventListener('change', () => updateRecallsForField(name));
+        });
+
+        // Initialiser l'affichage de tous les rappels au chargement de l'aperçu
+        Object.keys(fields).forEach(fieldId => {
+            updateRecallsForField(fieldId);
+        });
     }
 
     function copyPromptText() {
         let content = promptEditor.value;
 
-        // Get form values from preview
         const formData = {};
         previewContent.querySelectorAll('input, select, textarea').forEach(el => {
             const name = el.name;
@@ -587,13 +651,11 @@ Vous pouvez créer des champs personnalisables en utilisant le menu "Insérer un
             }
         });
 
-        // Replace field references with values
         const fieldPattern = /\{\{([a-zA-Z0-9_-]+)\}\}/g;
         content = content.replace(fieldPattern, (match, fieldId) => {
-            return formData[fieldId] || match;
+            return formData[fieldId] !== undefined ? formData[fieldId] : match;
         });
 
-        // Convert markdown to plain text
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
         const plainText = tempDiv.innerText || tempDiv.textContent || '';
@@ -618,6 +680,8 @@ legend { font-weight: bold; }
 select, input[type="text"], input[type="number"], input[type="url"], input[type="email"], textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-top: 5px; margin-bottom: 5px;} 
 input[type="range"] { width: 100%; }
 input[type="range"] + output { margin-left: 10px; font-weight: 500; } 
+.field-recall { font-size:0.85em; background:#e0e0e0; color:#666; padding:2px 6px; border-radius:4px; border:1px dashed #bbb; display:inline-block; margin: 2px 0; transition: all 0.2s ease; }
+.field-recall.filled { background:#e2f0d9 !important; color:#385723 !important; border-color:#c5e0b4 !important; border-style:solid !important; font-weight: bold; }
 .copy-prompt-btn-exported { 
     display: block; 
     padding: 12px 25px; 
@@ -630,6 +694,8 @@ input[type="range"] + output { margin-left: 10px; font-weight: 500; }
     font-weight: bold;
     margin-left: auto; 
     margin-right: auto; 
+    margin-top: 2em;
+    margin-bottom: 2em;
 }
 .copy-prompt-btn-exported:hover { background-color: #8C235D; }
 .container > .js-copy-prompt-btn.copy-prompt-btn-exported:first-of-type {
@@ -652,12 +718,14 @@ input[type="range"] + output { margin-left: 10px; font-weight: 500; }
 
     function getScriptForExportedPage() {
         const promptContent = promptEditor.value;
+        const fieldsData = fields;
 
         return `<script>
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.container');
     const copyBtns = document.querySelectorAll('.js-copy-prompt-btn');
     const promptContent = ${JSON.stringify(promptContent)};
+    const fieldsData = ${JSON.stringify(fieldsData)};
 
     const getFormData = () => {
         const formData = {};
@@ -678,7 +746,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return formData;
     };
 
-    // Range input updates
     container.querySelectorAll('input[type="range"]').forEach(range => {
         range.addEventListener('input', (e) => {
             const output = e.target.nextElementSibling;
@@ -688,18 +755,61 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const updateRecallsForField = (fieldId) => {
+        const field = fieldsData[fieldId];
+        if (!field) return;
+
+        const elements = container.querySelectorAll('[name="' + fieldId + '"]');
+        if (elements.length === 0) return;
+
+        let value = '';
+        if (field.type === 'checkbox') {
+            const checkedOpts = [];
+            container.querySelectorAll('input[name="' + fieldId + '"]:checked').forEach(cb => {
+                checkedOpts.push(cb.value);
+            });
+            value = checkedOpts.join(', ');
+        } else if (field.type === 'qcm') {
+            const checkedRadio = container.querySelector('input[name="' + fieldId + '"]:checked');
+            value = checkedRadio ? checkedRadio.value : '';
+        } else {
+            value = elements[0].value;
+        }
+
+        const recalls = container.querySelectorAll('.field-recall[data-field-id="' + fieldId + '"]');
+        recalls.forEach(recall => {
+            if (value && value.trim() !== '') {
+                recall.textContent = value;
+                recall.classList.add('filled');
+            } else {
+                recall.textContent = '[Rappel : ' + (field.label || fieldId) + ']';
+                recall.classList.remove('filled');
+            }
+        });
+    };
+
+    container.querySelectorAll('input, select, textarea').forEach(el => {
+        const name = el.name;
+        if (!name) return;
+
+        el.addEventListener('input', () => updateRecallsForField(name));
+        el.addEventListener('change', () => updateRecallsForField(name));
+    });
+
+    Object.keys(fieldsData).forEach(fieldId => {
+        updateRecallsForField(fieldId);
+    });
+
     copyBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const formData = getFormData();
             let content = promptContent;
 
-            // Replace field references with values
             const fieldPattern = /\\{\\{([a-zA-Z0-9_-]+)\\}\\}/g;
             content = content.replace(fieldPattern, (match, fieldId) => {
-                return formData[fieldId] || match;
+                return formData[fieldId] !== undefined ? formData[fieldId] : match;
             });
 
-            // Convert markdown to plain text
             const tempDiv = document.createElement('div');
             if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
                 tempDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
@@ -751,14 +861,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const configuration = JSON.parse(e.target.result);
 
-                // Check version and migrate if needed
                 if (configuration.version === 3) {
-                    // New format
                     fieldCounter = configuration.elementCounter || 0;
                     promptEditor.value = configuration.promptContent || '';
                     fields = configuration.fields || {};
                 } else {
-                    // Old format - migrate
                     migrateOldFormat(configuration);
                 }
 
@@ -779,13 +886,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function migrateOldFormat(oldConfig) {
-        // Find prompt item
         const promptItem = oldConfig.items?.find(item => item.isPrompt === 'true');
         if (promptItem) {
             promptEditor.value = promptItem.content || '';
         }
 
-        // Convert other items to fields
         fields = {};
         fieldCounter = oldConfig.elementCounter || 0;
 
@@ -802,7 +907,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 required: item.required === 'true'
             };
 
-            // Type-specific properties
             if (item.options) {
                 field.options = item.options.split(';').filter(Boolean);
             }
